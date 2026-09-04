@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nonvoyxona ERP & Nasiya Nazorati</title>
+    <title>Nonvoyxona ERP & Moliya Nazorati</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
@@ -44,7 +44,7 @@
         .btn-success { background-color: var(--success); }
         .btn-danger { background-color: var(--danger); }
         .btn-warning { background-color: var(--warning); color: #fff; }
-        .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.7rem; width: auto; display: inline-block; }
+        .btn-sm { padding: 0.25rem 0.4rem; font-size: 0.7rem; width: auto; display: inline-block; }
         .btn-excel { background-color: #107c41; margin-top: 5px; }
 
         table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.5rem; }
@@ -58,28 +58,76 @@
         .badge-warning { background-color: #fef3c7; color: #92400e; }
 
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .kassa-box { background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1rem; border-radius: 8px; text-align: center; margin-bottom: 1rem; }
+        .kassa-box h3 { font-size: 0.9rem; color: #065f46; }
+        .kassa-box .amount { font-size: 1.5rem; font-weight: bold; color: #047857; margin-top: 5px; }
+
         .history-item { background: #fff8f1; border-left: 4px solid var(--primary); padding: 0.6rem; border-radius: 4px; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>🥖 Nonvoyxona ERP & Nasiya Nazorati</h1>
+        <h1>🥖 Nonvoyxona ERP & Moliya Nazorati</h1>
     </header>
 
     <nav>
-        <button class="active" onclick="switchTab('ishlab-chiqarish')">🥖 Ishlab chiqarish</button>
-        <button onclick="switchTab('sotuv')">💰 Sotuv / Nasiya</button>
+        <button class="active" onclick="switchTab('kassa')">💵 Kassa</button>
+        <button onclick="switchTab('ishlab-chiqarish')">🥖 Ishlab chiqarish</button>
+        <button onclick="switchTab('sotuv')">💰 Sotuv</button>
         <button onclick="switchTab('mijozlar')">🤝 Do'konlar</button>
         <button onclick="switchTab('xodimlar')">👷 Xodimlar</button>
         <button onclick="switchTab('ombor')">📦 Ombor</button>
-        <button onclick="switchTab('tarix')">📜 Tarix & Tahrir</button>
+        <button onclick="switchTab('hisobot')">📊 Hisobot</button>
+        <button onclick="switchTab('tarix')">📜 Tarix</button>
     </nav>
 
     <div class="container">
 
+        <!-- 0. KASSA VA CHIQIM/KIRIM -->
+        <div id="kassa" class="tab-content active">
+            <div class="kassa-box">
+                <h3>💵 Kassadagi Sof Naqd Pul</h3>
+                <div class="amount" id="kassa-balance">0 so'm</div>
+            </div>
+
+            <div class="card">
+                <h2>➕ Kirim / Chiqim Amali Kiritish</h2>
+                <form id="form-cash-flow">
+                    <label>Amal Turi</label>
+                    <select id="cash-type" required>
+                        <option value="Chiqim">Chiqim (Xarajat / Sarf)</option>
+                        <option value="Kirim">Kirim (Qo'shimcha pul kiritish)</option>
+                    </select>
+
+                    <label>Kategoriya / Maqsad</label>
+                    <input type="text" id="cash-category" placeholder="Masalan: Svet, Gaz, Arenda, Transport..." required>
+
+                    <label>Summa (so'm)</label>
+                    <input type="number" id="cash-amount" placeholder="0" required>
+
+                    <button type="submit" class="btn btn-warning" style="margin-top: 5px;">💾 Kassa Amali Saqlash</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h2>📜 Kassa Amallari Tarixi</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Sana</th>
+                            <th>Turi</th>
+                            <th>Sabab</th>
+                            <th class="text-right">Summa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cash-table"></tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- 1. ISHLAB CHIQARISH -->
-        <div id="ishlab-chiqarish" class="tab-content active">
+        <div id="ishlab-chiqarish" class="tab-content">
             <div class="card">
                 <h2>⚡ Yangi Yopilgan Nonlarni Kiritish</h2>
                 <form id="form-production">
@@ -92,8 +140,8 @@
                             <select id="prod-worker" required></select>
                         </div>
                         <div>
-                            <label>1 Qop Un Uch Maosh (so'm)</label>
-                            <input type="number" id="prod-rate-per-bag" value="25000" placeholder="Masalan: 25000" required>
+                            <label>1 Qop Un Maoshi (so'm)</label>
+                            <input type="number" id="prod-rate-per-bag" value="25000" placeholder="25000" required>
                         </div>
                     </div>
 
@@ -129,8 +177,8 @@
 
                     <label>Sotuv Turi</label>
                     <select id="sale-type" required>
-                        <option value="Naqd">Naqd to'lov</option>
-                        <option value="Nasiya">Nasiya (Qarzdorlikka yozish)</option>
+                        <option value="Naqd">Naqd to'lov (Kassaga kirim)</option>
+                        <option value="Nasiya">Nasiya (Do'kon qarziga)</option>
                     </select>
 
                     <div class="grid-2">
@@ -182,7 +230,7 @@
                     <select id="pay-customer-id" required></select>
                     <label>To'langan Summa (so'm)</label>
                     <input type="number" id="pay-amount" placeholder="0" required>
-                    <button type="submit" class="btn btn-success" style="margin-top: 5px;">💵 To'lovni Saqlash</button>
+                    <button type="submit" class="btn btn-success" style="margin-top: 5px;">💵 To'lovni Saqlash (Kassaga Kirim)</button>
                 </form>
             </div>
 
@@ -206,20 +254,20 @@
             <div class="card">
                 <h2>➕ Yangi Xodim Qo'shish</h2>
                 <form id="form-add-worker">
-                    <input type="text" id="work-name" placeholder="Xodim F.I.SH (Masalan: Davron)" required>
-                    <input type="text" id="work-role" placeholder="Lavozimi (Nonvoy, Pechshik)" required style="margin-top: 5px;">
+                    <input type="text" id="work-name" placeholder="Xodim F.I.SH" required>
+                    <input type="text" id="work-role" placeholder="Lavozimi" required style="margin-top: 5px;">
                     <button type="submit" class="btn" style="margin-top: 5px;">Xodimni Saqlash</button>
                 </form>
             </div>
 
             <div class="card">
-                <h2>💸 Avans / Oylik Berish</h2>
+                <h2>💸 Avans / Oylik Berish (Kassadan Chiqim)</h2>
                 <form id="form-worker-payout">
                     <label>Xodim</label>
                     <select id="payout-worker-id" required></select>
                     <label>Berilgan Summa (so'm)</label>
                     <input type="number" id="payout-amount" placeholder="0" required>
-                    <button type="submit" class="btn btn-danger" style="margin-top: 5px;">💸 Avansni Saqlash</button>
+                    <button type="submit" class="btn btn-danger" style="margin-top: 5px;">💸 Avans Berish</button>
                 </form>
             </div>
 
@@ -240,7 +288,7 @@
             </div>
         </div>
 
-        <!-- 5. OMBOR QOLDIQLARI -->
+        <!-- 5. OMBOR QOLDIQLARI VA TAHRIR -->
         <div id="ombor" class="tab-content">
             <div class="card">
                 <h2>📥 Omborga Xomashyo Kirim Qilish</h2>
@@ -257,7 +305,7 @@
                             <input type="number" step="0.1" id="stock-item-qty" placeholder="0" required>
                         </div>
                         <div>
-                            <label>Jami Harid Summasi (so'm)</label>
+                            <label>Jami Harid Summasi (Kassadan Chiqim)</label>
                             <input type="number" id="stock-item-cost" placeholder="0" required>
                         </div>
                     </div>
@@ -266,31 +314,51 @@
             </div>
 
             <div class="card">
-                <h2>📦 Ombordagi Qoldiqlar</h2>
+                <h2>📦 Ombordagi Qoldiqlar (Tahrirlash)</h2>
                 <table>
                     <thead>
                         <tr>
                             <th>Mahsulot / Xomashyo</th>
-                            <th class="text-right">Mavjud Qoldiq</th>
+                            <th>Qoldiq</th>
+                            <th class="text-right">Amal</th>
                         </tr>
                     </thead>
                     <tbody id="stock-table"></tbody>
                 </table>
             </div>
+        </div>
 
+        <!-- 6. DAVR BO'YICHA HISOBOTLAR -->
+        <div id="hisobot" class="tab-content">
             <div class="card">
-                <h2>📑 Malumotlarni Saqlash</h2>
+                <h2>📊 Tanlangan Davr Bo'yicha Hisobot</h2>
+                <div class="grid-2">
+                    <div>
+                        <label>Boshlanish Sana</label>
+                        <input type="date" id="rep-start">
+                    </div>
+                    <div>
+                        <label>Tugash Sana</label>
+                        <input type="date" id="rep-end">
+                    </div>
+                </div>
+                <button class="btn btn-success" style="margin-top: 10px;" onclick="renderReport()">🔍 Hisobotni Ko'rish</button>
+            </div>
+
+            <div class="card" id="report-results" style="display:none;">
+                <h2>📋 Hisobot Natijalari</h2>
+                <div id="report-content"></div>
                 <button class="btn btn-excel" onclick="exportToExcel()">📑 Excelga Yuklash</button>
-                <button class="btn btn-danger" style="margin-top: 10px;" onclick="clearAllData()">🗑 Barcha Ma'lumotlarni O'chirish</button>
             </div>
         </div>
 
-        <!-- 6. TARIX VA TAHRIRLASH -->
+        <!-- 7. TARIX VA TAHRIRLASH -->
         <div id="tarix" class="tab-content">
             <div class="card">
                 <h2>🛠 So'nggi Tranzaksiyalar va O'chirish</h2>
-                <p style="font-size: 0.75rem; color: #6b7280; margin-bottom: 10px;">Xato kiritilgan ma'lumotlarni bu yerdan o'chirishingiz mumkin. Ombor va balanslar avtomatik qayta hisoblanadi.</p>
+                <p style="font-size: 0.75rem; color: #6b7280; margin-bottom: 10px;">Xato amallarni o'chirish ombor va kassani avtomatik qayta tiklaydi.</p>
                 <div id="history-list"></div>
+                <button class="btn btn-danger" style="margin-top: 15px;" onclick="clearAllData()">🗑 Barcha Ma'lumotlarni O'chirish</button>
             </div>
         </div>
 
@@ -315,7 +383,8 @@
             sales: [],
             stockInputs: [],
             customerPayments: [],
-            workerPayouts: []
+            workerPayouts: [],
+            cashFlows: []
         };
 
         function saveData() {
@@ -329,6 +398,7 @@
             document.getElementById(tabId).classList.add('active');
             event.target.classList.add('active');
             if(tabId === 'tarix') renderHistory();
+            if(tabId === 'kassa') renderKassa();
         }
 
         function setNowDates() {
@@ -337,6 +407,37 @@
             const formatted = now.toISOString().slice(0, 16);
             if(document.getElementById('prod-time')) document.getElementById('prod-time').value = formatted;
             if(document.getElementById('sale-time')) document.getElementById('sale-time').value = formatted;
+            if(document.getElementById('rep-start')) document.getElementById('rep-start').value = now.toISOString().slice(0, 10);
+            if(document.getElementById('rep-end')) document.getElementById('rep-end').value = now.toISOString().slice(0, 10);
+        }
+
+        function getKassaBalance() {
+            let total = 0;
+            db.sales.filter(s => s.type === 'Naqd').forEach(s => total += s.totalAmount);
+            db.customerPayments.forEach(p => total += p.amount);
+            db.cashFlows.forEach(c => {
+                if(c.type === 'Kirim') total += c.amount;
+                if(c.type === 'Chiqim') total -= c.amount;
+            });
+            db.workerPayouts.forEach(w => total -= w.amount);
+            db.stockInputs.forEach(s => total -= (s.cost || 0));
+            return total;
+        }
+
+        function renderKassa() {
+            document.getElementById('kassa-balance').innerText = getKassaBalance().toLocaleString() + " so'm";
+            const tbody = document.getElementById('cash-table');
+            tbody.innerHTML = '';
+            db.cashFlows.slice().reverse().forEach(c => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><small>${c.date.slice(0,10)}</small></td>
+                        <td><span class="badge ${c.type === 'Kirim' ? 'badge-success' : 'badge-danger'}">${c.type}</span></td>
+                        <td>${c.category}</td>
+                        <td class="text-right"><b>${c.amount.toLocaleString()}</b></td>
+                    </tr>
+                `;
+            });
         }
 
         function calcSaleTotal() {
@@ -344,38 +445,55 @@
             const pPrice = parseFloat(document.getElementById('sale-patir-price').value) || 0;
             const kQty = parseFloat(document.getElementById('sale-kulcha-qty').value) || 0;
             const kPrice = parseFloat(document.getElementById('sale-kulcha-price').value) || 0;
-
-            const total = (pQty * pPrice) + (kQty * kPrice);
-            document.getElementById('sale-total-text').innerText = total.toLocaleString() + " so'm";
+            document.getElementById('sale-total-text').innerText = ((pQty * pPrice) + (kQty * kPrice)).toLocaleString() + " so'm";
         }
 
         function getCustomerBalance(custId) {
             let balance = 0;
-            db.sales.filter(s => s.type === 'Nasiya' && s.customerId == custId).forEach(s => {
-                balance -= s.totalAmount;
-            });
-            db.customerPayments.filter(p => p.customerId == custId).forEach(p => {
-                balance += p.amount;
-            });
+            db.sales.filter(s => s.type === 'Nasiya' && s.customerId == custId).forEach(s => balance -= s.totalAmount);
+            db.customerPayments.filter(p => p.customerId == custId).forEach(p => balance += p.amount);
             return balance;
         }
 
         function getWorkerStats(workerId) {
-            let totalBags = 0;
-            let earned = 0;
+            let totalBags = 0, earned = 0;
             db.productions.filter(p => p.workerId == workerId).forEach(p => {
                 totalBags += p.flourBags;
                 earned += (p.flourBags * (p.ratePerBag || 25000));
             });
-
             let paid = db.workerPayouts.filter(p => p.workerId == workerId).reduce((sum, p) => sum + p.amount, 0);
+            return { bags: totalBags, earned: earned, paid: paid, balance: earned - paid };
+        }
 
-            return {
-                bags: totalBags,
-                earned: earned,
-                paid: paid,
-                balance: earned - paid
-            };
+        function editStockPrompt(itemKey, title) {
+            let current = db.stock[itemKey];
+            let newVal = prompt(`${title} uchun yangi qoldiq miqdorini kiriting:`, current);
+            if(newVal !== null && !isNaN(parseFloat(newVal))) {
+                db.stock[itemKey] = parseFloat(newVal);
+                saveData();
+                alert("Ombor qoldig'i tahrirlandi!");
+            }
+        }
+
+        function renderStock() {
+            const tbody = document.getElementById('stock-table');
+            const items = [
+                { key: 'flour', name: "🌾 Un (Qop)", unit: "qop" },
+                { key: 'oil', name: "🌻 Yog' (Litr)", unit: "L" },
+                { key: 'yeast', name: "🧪 Xamirturush (kg)", unit: "kg" },
+                { key: 'patir', name: "🥖 Chaqqon Patir", unit: "dona" },
+                { key: 'kulcha', name: "🫓 Kulcha Non", unit: "dona" }
+            ];
+
+            tbody.innerHTML = items.map(item => `
+                <tr>
+                    <td><b>${item.name}</b></td>
+                    <td><b>${db.stock[item.key]} ${item.unit}</b></td>
+                    <td class="text-right">
+                        <button class="btn btn-warning btn-sm" onclick="editStockPrompt('${item.key}', '${item.name}')">✏️ Tahrirlash</button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
         function renderAll() {
@@ -383,6 +501,7 @@
             renderStock();
             renderCustomers();
             renderWorkers();
+            renderKassa();
         }
 
         function renderDropdowns() {
@@ -395,20 +514,8 @@
 
             const cSelect = document.getElementById('sale-customer');
             const cPaySelect = document.getElementById('pay-customer-id');
-            const custOpts = db.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-            cSelect.innerHTML = custOpts;
+            cSelect.innerHTML = db.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             cPaySelect.innerHTML = db.customers.filter(c => c.id !== 100).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        }
-
-        function renderStock() {
-            const tbody = document.getElementById('stock-table');
-            tbody.innerHTML = `
-                <tr><td>🌾 Un (Qop)</td><td class="text-right"><b>${db.stock.flour.toFixed(1)} qop</b></td></tr>
-                <tr><td>🌻 Yog' (Litr)</td><td class="text-right"><b>${db.stock.oil.toFixed(1)} L</b></td></tr>
-                <tr><td>🧪 Xamirturush (kg)</td><td class="text-right"><b>${db.stock.yeast.toFixed(1)} kg</b></td></tr>
-                <tr style="background:#fff7ed;"><td>🥖 Tayyor Chaqqon Patir</td><td class="text-right"><b style="color:var(--primary-dark);">${db.stock.patir} dona</b></td></tr>
-                <tr style="background:#fff7ed;"><td>🫓 Tayyor Kulcha Non</td><td class="text-right"><b style="color:var(--primary-dark);">${db.stock.kulcha} dona</b></td></tr>
-            `;
         }
 
         function renderCustomers() {
@@ -445,21 +552,48 @@
             });
         }
 
+        function renderReport() {
+            const start = document.getElementById('rep-start').value;
+            const end = document.getElementById('rep-end').value;
+
+            let salesFiltered = db.sales.filter(s => s.datetime.slice(0,10) >= start && s.datetime.slice(0,10) <= end);
+            let totalNaqd = salesFiltered.filter(s => s.type === 'Naqd').reduce((a,b) => a + b.totalAmount, 0);
+            let totalNasiya = salesFiltered.filter(s => s.type === 'Nasiya').reduce((a,b) => a + b.totalAmount, 0);
+
+            let customerDebts = 0;
+            db.customers.filter(c => c.id !== 100).forEach(c => {
+                let b = getCustomerBalance(c.id);
+                if(b < 0) customerDebts += Math.abs(b);
+            });
+
+            let workerDebts = 0;
+            db.workers.forEach(w => {
+                let s = getWorkerStats(w.id);
+                if(s.balance > 0) workerDebts += s.balance;
+            });
+
+            document.getElementById('report-results').style.display = 'block';
+            document.getElementById('report-content').innerHTML = `
+                <p>📅 <b>Davr:</b> ${start} dan ${end} gacha</p><hr style="margin:8px 0;">
+                <p>💰 <b>Jami Naqd Sotuv:</b> ${totalNaqd.toLocaleString()} so'm</p>
+                <p>📝 <b>Jami Nasiya Sotuv:</b> ${totalNasiya.toLocaleString()} so'm</p>
+                <p style="color:var(--danger);">🤝 <b>Mijozlarning Bizdan Qarzi:</b> ${customerDebts.toLocaleString()} so'm</p>
+                <p style="color:var(--primary-dark);">👷 <b>Xodimlarga Bizning Qarzimiz (Oylik):</b> ${workerDebts.toLocaleString()} so'm</p>
+            `;
+        }
+
         function renderHistory() {
             const div = document.getElementById('history-list');
             div.innerHTML = '';
-
             let list = [];
 
             db.productions.forEach((p, index) => {
                 let worker = db.workers.find(w => w.id == p.workerId)?.name || 'Xodim';
                 list.push({
                     type: 'Ishlab chiqarish',
-                    details: `<b>${worker}</b>: ${p.flourBags} qop un, ${p.patirQty} patir, ${p.kulchaQty} kulcha`,
+                    details: `<b>${worker}</b>: ${p.flourBags} qop un`,
                     action: () => {
                         db.stock.flour += p.flourBags;
-                        db.stock.oil += (p.flourBags * 1.5);
-                        db.stock.yeast += (p.flourBags * 0.5);
                         db.stock.patir -= p.patirQty;
                         db.stock.kulcha -= p.kulchaQty;
                         db.productions.splice(index, 1);
@@ -471,7 +605,7 @@
                 let cust = db.customers.find(c => c.id == s.customerId)?.name || 'Mijoz';
                 list.push({
                     type: `Sotuv (${s.type})`,
-                    details: `<b>${cust}</b>: ${s.patirQty} patir, ${s.kulchaQty} kulcha. Summa: ${s.totalAmount.toLocaleString()} so'm`,
+                    details: `<b>${cust}</b>: ${s.totalAmount.toLocaleString()} so'm`,
                     action: () => {
                         db.stock.patir += s.patirQty;
                         db.stock.kulcha += s.kulchaQty;
@@ -480,21 +614,13 @@
                 });
             });
 
-            db.stockInputs.forEach((i, index) => {
+            db.cashFlows.forEach((c, index) => {
                 list.push({
-                    type: 'Ombor Kirimi',
-                    details: `${i.type.toUpperCase()}: ${i.qty} miqdor, ${i.cost.toLocaleString()} so'm`,
-                    action: () => {
-                        db.stock[i.type] -= i.qty;
-                        db.stockInputs.splice(index, 1);
-                    }
+                    type: `Kassa ${c.type}`,
+                    details: `${c.category}: ${c.amount.toLocaleString()} so'm`,
+                    action: () => db.cashFlows.splice(index, 1)
                 });
             });
-
-            if(list.length === 0) {
-                div.innerHTML = '<p style="font-size:0.8rem; color:#9ca3af;">Hozircha amallar tarixi yo\'q.</p>';
-                return;
-            }
 
             list.reverse().forEach((item, idx) => {
                 let el = document.createElement('div');
@@ -508,118 +634,87 @@
                 `;
                 div.appendChild(el);
             });
-
             window.historyActions = list.reverse();
         }
 
         function deleteHistoryItem(index) {
-            if(confirm("Ushbu tranzaksiyani o'chirmoqchimisiz? Ombor va balans qayta tiklanadi.")) {
+            if(confirm("Ushbu tranzaksiyani o'chirmoqchimisiz? Ombor va kassa qayta hisoblanadi.")) {
                 window.historyActions[index].action();
-                saveData();
-                renderHistory();
+                saveData(); renderHistory();
             }
         }
 
         // --- FORMS ---
+        document.getElementById('form-cash-flow').addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.cashFlows.push({
+                type: document.getElementById('cash-type').value,
+                category: document.getElementById('cash-category').value,
+                amount: parseFloat(document.getElementById('cash-amount').value),
+                date: new Date().toISOString()
+            });
+            saveData(); e.target.reset(); alert("Kassa amali saqlandi!");
+        });
+
         document.getElementById('form-production').addEventListener('submit', (e) => {
             e.preventDefault();
             const bags = parseFloat(document.getElementById('prod-flour-bags').value);
             const patir = parseInt(document.getElementById('prod-patir').value) || 0;
             const kulcha = parseInt(document.getElementById('prod-kulcha').value) || 0;
-            const rate = parseFloat(document.getElementById('prod-rate-per-bag').value) || 25000;
 
-            if(db.stock.flour < bags) {
-                alert("⚠️ Omborda yetarli un yo'q!");
-                return;
-            }
+            if(db.stock.flour < bags) { alert("⚠️ Omborda yetarli un yo'q!"); return; }
 
-            db.stock.flour -= bags;
-            db.stock.oil -= (bags * 1.5);
-            db.stock.yeast -= (bags * 0.5);
-
-            db.stock.patir += patir;
-            db.stock.kulcha += kulcha;
+            db.stock.flour -= bags; db.stock.oil -= (bags * 1.5); db.stock.yeast -= (bags * 0.5);
+            db.stock.patir += patir; db.stock.kulcha += kulcha;
 
             db.productions.push({
                 datetime: document.getElementById('prod-time').value,
                 workerId: parseInt(document.getElementById('prod-worker').value),
-                flourBags: bags,
-                ratePerBag: rate,
-                patirQty: patir,
-                kulchaQty: kulcha
+                flourBags: bags, ratePerBag: parseFloat(document.getElementById('prod-rate-per-bag').value) || 25000,
+                patirQty: patir, kulchaQty: kulcha
             });
-
             saveData(); alert("🥖 Ishlab chiqarish saqlandi!");
         });
 
         document.getElementById('form-sales').addEventListener('submit', (e) => {
             e.preventDefault();
             const type = document.getElementById('sale-type').value;
-            const customerId = parseInt(document.getElementById('sale-customer').value);
             const pQty = parseInt(document.getElementById('sale-patir-qty').value) || 0;
-            const pPrice = parseFloat(document.getElementById('sale-patir-price').value) || 0;
             const kQty = parseInt(document.getElementById('sale-kulcha-qty').value) || 0;
-            const kPrice = parseFloat(document.getElementById('sale-kulcha-price').value) || 0;
-            const totalAmount = (pQty * pPrice) + (kQty * kPrice);
+            const total = (pQty * (parseFloat(document.getElementById('sale-patir-price').value)||0)) + (kQty * (parseFloat(document.getElementById('sale-kulcha-price').value)||0));
 
-            if(db.stock.patir < pQty || db.stock.kulcha < kQty) {
-                alert("⚠️ Omborda buncha tayyor non yo'q!");
-                return;
-            }
+            if(db.stock.patir < pQty || db.stock.kulcha < kQty) { alert("⚠️ Omborda buncha tayyor non yo'q!"); return; }
 
-            db.stock.patir -= pQty;
-            db.stock.kulcha -= kQty;
-
+            db.stock.patir -= pQty; db.stock.kulcha -= kQty;
             db.sales.push({
-                datetime: document.getElementById('sale-time').value,
-                type: type,
-                customerId: customerId,
-                patirQty: pQty,
-                kulchaQty: kQty,
-                totalAmount: totalAmount
+                datetime: document.getElementById('sale-time').value, type, customerId: parseInt(document.getElementById('sale-customer').value),
+                patirQty: pQty, kulchaQty: kQty, totalAmount: total
             });
-
             saveData(); alert("✅ Sotuv saqlandi!");
         });
 
         document.getElementById('form-add-customer').addEventListener('submit', (e) => {
             e.preventDefault();
-            db.customers.push({
-                id: Date.now(),
-                name: document.getElementById('cust-name').value,
-                phone: document.getElementById('cust-phone').value
-            });
+            db.customers.push({ id: Date.now(), name: document.getElementById('cust-name').value, phone: document.getElementById('cust-phone').value });
             saveData(); e.target.reset(); alert("Do'kon qo'shildi!");
         });
 
         document.getElementById('form-pay-debt').addEventListener('submit', (e) => {
             e.preventDefault();
-            db.customerPayments.push({
-                customerId: parseInt(document.getElementById('pay-customer-id').value),
-                amount: parseFloat(document.getElementById('pay-amount').value),
-                date: new Date().toISOString()
-            });
-            saveData(); alert("To'lov saqlandi!");
+            db.customerPayments.push({ customerId: parseInt(document.getElementById('pay-customer-id').value), amount: parseFloat(document.getElementById('pay-amount').value), date: new Date().toISOString() });
+            saveData(); alert("To'lov saqlandi (Kassaga kirim bo'ldi)!");
         });
 
         document.getElementById('form-add-worker').addEventListener('submit', (e) => {
             e.preventDefault();
-            db.workers.push({
-                id: Date.now(),
-                name: document.getElementById('work-name').value,
-                role: document.getElementById('work-role').value
-            });
+            db.workers.push({ id: Date.now(), name: document.getElementById('work-name').value, role: document.getElementById('work-role').value });
             saveData(); e.target.reset(); alert("Xodim qo'shildi!");
         });
 
         document.getElementById('form-worker-payout').addEventListener('submit', (e) => {
             e.preventDefault();
-            db.workerPayouts.push({
-                workerId: parseInt(document.getElementById('payout-worker-id').value),
-                amount: parseFloat(document.getElementById('payout-amount').value),
-                date: new Date().toISOString()
-            });
-            saveData(); alert("Avans saqlandi!");
+            db.workerPayouts.push({ workerId: parseInt(document.getElementById('payout-worker-id').value), amount: parseFloat(document.getElementById('payout-amount').value), date: new Date().toISOString() });
+            saveData(); alert("Avans saqlandi (Kassadan chiqim bo'ldi)!");
         });
 
         document.getElementById('form-add-stock').addEventListener('submit', (e) => {
@@ -627,11 +722,9 @@
             const type = document.getElementById('stock-item-type').value;
             const qty = parseFloat(document.getElementById('stock-item-qty').value);
             const cost = parseFloat(document.getElementById('stock-item-cost').value) || 0;
-
             db.stock[type] += qty;
             db.stockInputs.push({ type, qty, cost, date: new Date().toISOString() });
-
-            saveData(); alert("Ombor to'ldirildi!");
+            saveData(); alert("Omborga kirim saqlandi (Kassadan chiqim bo'ldi)!");
         });
 
         function exportToExcel() {
