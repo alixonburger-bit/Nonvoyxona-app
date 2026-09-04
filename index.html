@@ -80,7 +80,7 @@
                     <label>Sana va Vaqt</label>
                     <input type="datetime-local" id="prod-time" required>
 
-                    <label>Mas'ul Xodim (Nonvoy / Pechshik)</label>
+                    <label>Mas'ul Nonvoy</label>
                     <select id="prod-worker" required></select>
 
                     <label>Ishlatilgan Un Miqdori (Qopda)</label>
@@ -110,16 +110,14 @@
                     <label>Sana va Vaqt</label>
                     <input type="datetime-local" id="sale-time" required>
 
-                    <label>Sotuv Turi</label>
-                    <select id="sale-type" onchange="toggleCustomerSelect()" required>
-                        <option value="Naqd">Naqd (Chakana kassa)</option>
-                        <option value="Nasiya">Nasiya (Do'konga / Mijozga)</option>
-                    </select>
+                    <label>Mijoz / Do'konni Tanlang</label>
+                    <select id="sale-customer" required></select>
 
-                    <div id="customer-select-box" style="display: none;">
-                        <label>Do'kon / Mijozni Tanlang</label>
-                        <select id="sale-customer"></select>
-                    </div>
+                    <label>Sotuv Turi</label>
+                    <select id="sale-type" required>
+                        <option value="Naqd">Naqd to'lov</option>
+                        <option value="Nasiya">Nasiya (Qarzdorlikka yozish)</option>
+                    </select>
 
                     <div class="grid-2">
                         <div>
@@ -194,9 +192,9 @@
             <div class="card">
                 <h2>➕ Yangi Xodim va Stavka</h2>
                 <form id="form-add-worker">
-                    <input type="text" id="work-name" placeholder="Xodim F.I.SH (Masalan: Ali)" required>
+                    <input type="text" id="work-name" placeholder="Xodim F.I.SH (Masalan: Davron)" required>
                     <div class="grid-2" style="margin-top: 5px;">
-                        <input type="text" id="work-role" placeholder="Lavozi (Pechshik, Xamirchi)" required>
+                        <input type="text" id="work-role" placeholder="Lavozi (Nonvoy, Pechshik)" required>
                         <input type="number" id="work-rate" placeholder="1 qop un uchun maosh (so'm)" required>
                     </div>
                     <button type="submit" class="btn" style="margin-top: 5px;">Xodimni Saqlash</button>
@@ -277,10 +275,11 @@
         let db = JSON.parse(localStorage.getItem('bakery_erp_db')) || {
             stock: { flour: 50, oil: 20, yeast: 10, patir: 0, kulcha: 0 },
             workers: [
-                { id: 1, name: "Vali (Pechshik)", role: "Pechshik", ratePerBag: 25000 },
-                { id: 2, name: "Hasan (Xamirchi)", role: "Xamirchi", ratePerBag: 15000 }
+                { id: 1, name: "Davron nonvoy", role: "Nonvoy", ratePerBag: 25000 },
+                { id: 2, name: "Vali (Yordamchi)", role: "Pechshik", ratePerBag: 15000 }
             ],
             customers: [
+                { id: 100, name: "Chakana Xaridor (Naqd)", phone: "-" },
                 { id: 101, name: "Oazis Do'koni", phone: "+998901234567" },
                 { id: 102, name: "Baraka Supermarket", phone: "+998919876543" }
             ],
@@ -310,11 +309,6 @@
             if(document.getElementById('sale-time')) document.getElementById('sale-time').value = formatted;
         }
 
-        function toggleCustomerSelect() {
-            const type = document.getElementById('sale-type').value;
-            document.getElementById('customer-select-box').style.display = type === 'Nasiya' ? 'block' : 'none';
-        }
-
         function calcSaleTotal() {
             const pQty = parseFloat(document.getElementById('sale-patir-qty').value) || 0;
             const pPrice = parseFloat(document.getElementById('sale-patir-price').value) || 0;
@@ -325,14 +319,13 @@
             document.getElementById('sale-total-text').innerText = total.toLocaleString() + " so'm";
         }
 
-        // --- CALCULATION LOGIC ---
         function getCustomerBalance(custId) {
             let balance = 0;
             db.sales.filter(s => s.type === 'Nasiya' && s.customerId == custId).forEach(s => {
-                balance -= s.totalAmount; // Qarz ko'payadi (-)
+                balance -= s.totalAmount;
             });
             db.customerPayments.filter(p => p.customerId == custId).forEach(p => {
-                balance += p.amount; // Qarz kamayadi (+)
+                balance += p.amount;
             });
             return balance;
         }
@@ -357,7 +350,6 @@
             };
         }
 
-        // --- RENDER FUNCTIONS ---
         function renderAll() {
             renderDropdowns();
             renderStock();
@@ -366,16 +358,22 @@
         }
 
         function renderDropdowns() {
+            // Ishlab chiqarishda faqat Nonvoy lavozimidagilar chiqadi
             const wSelect = document.getElementById('prod-worker');
-            const wPaySelect = document.getElementById('payout-worker-id');
-            wSelect.innerHTML = db.workers.map(w => `<option value="${w.id}">${w.name} (${w.ratePerBag.toLocaleString()} so'm/qop)</option>`).join('');
-            wPaySelect.innerHTML = wSelect.innerHTML;
+            const bakers = db.workers.filter(w => w.role.toLowerCase().includes('nonvoy'));
+            
+            wSelect.innerHTML = (bakers.length > 0 ? bakers : db.workers).map(w => `<option value="${w.id}">${w.name} (${w.ratePerBag.toLocaleString()} so'm/qop)</option>`).join('');
 
+            // Avans bo'limida barcha xodimlar
+            const wPaySelect = document.getElementById('payout-worker-id');
+            wPaySelect.innerHTML = db.workers.map(w => `<option value="${w.id}">${w.name} (${w.role})</option>`).join('');
+
+            // Sotuv bo'limida barcha mijozlar (Naqd ham, Do'konlar ham)
             const cSelect = document.getElementById('sale-customer');
             const cPaySelect = document.getElementById('pay-customer-id');
             const custOpts = db.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
             cSelect.innerHTML = custOpts;
-            cPaySelect.innerHTML = custOpts;
+            cPaySelect.innerHTML = db.customers.filter(c => c.id !== 100).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
         }
 
         function renderStock() {
@@ -392,7 +390,7 @@
         function renderCustomers() {
             const tbody = document.getElementById('customers-table');
             tbody.innerHTML = '';
-            db.customers.forEach(c => {
+            db.customers.filter(c => c.id !== 100).forEach(c => {
                 let bal = getCustomerBalance(c.id);
                 let badgeClass = bal < 0 ? 'badge-danger' : 'badge-success';
                 let balText = bal < 0 ? `${Math.abs(bal).toLocaleString()} so'm qarz` : `${bal.toLocaleString()} so'm haqi bor`;
@@ -423,7 +421,7 @@
             });
         }
 
-        // --- FORM SUBMITS ---
+        // --- FORMS ---
         document.getElementById('form-production').addEventListener('submit', (e) => {
             e.preventDefault();
             const bags = parseFloat(document.getElementById('prod-flour-bags').value);
@@ -435,12 +433,10 @@
                 return;
             }
 
-            // Un va xomashyo ayirish
             db.stock.flour -= bags;
-            db.stock.oil -= (bags * 1.5); // taxminiy: 1 qopga 1.5L yog'
-            db.stock.yeast -= (bags * 0.5); // 0.5 kg xamirturush
+            db.stock.oil -= (bags * 1.5);
+            db.stock.yeast -= (bags * 0.5);
 
-            // Nonlarni omborga qo'shish
             db.stock.patir += patir;
             db.stock.kulcha += kulcha;
 
@@ -452,12 +448,13 @@
                 kulchaQty: kulcha
             });
 
-            saveData(); alert("🥖 Ishlab chiqarish saqlandi va omborga qo'shildi!");
+            saveData(); alert("🥖 Ishlab chiqarish saqlandi!");
         });
 
         document.getElementById('form-sales').addEventListener('submit', (e) => {
             e.preventDefault();
             const type = document.getElementById('sale-type').value;
+            const customerId = parseInt(document.getElementById('sale-customer').value);
             const pQty = parseInt(document.getElementById('sale-patir-qty').value) || 0;
             const pPrice = parseFloat(document.getElementById('sale-patir-price').value) || 0;
             const kQty = parseInt(document.getElementById('sale-kulcha-qty').value) || 0;
@@ -475,13 +472,13 @@
             db.sales.push({
                 datetime: document.getElementById('sale-time').value,
                 type: type,
-                customerId: type === 'Nasiya' ? parseInt(document.getElementById('sale-customer').value) : null,
+                customerId: customerId,
                 patirQty: pQty,
                 kulchaQty: kQty,
                 totalAmount: totalAmount
             });
 
-            saveData(); alert("✅ Sotuv bajarildi!");
+            saveData(); alert("✅ Sotuv saqlandi!");
         });
 
         document.getElementById('form-add-customer').addEventListener('submit', (e) => {
